@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectId" id="3DJIzSvGHbZ2Xcy5mUxCkfgowKf" />
+  <component name="RunManager">
+    <configuration name="ArraysExample" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="ArraysExample" />
+      <module name="untitled" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="애플리케이션.ArraysExample" />
+      </list>
+    </recent_temporary>
+  </component>
+</project>
