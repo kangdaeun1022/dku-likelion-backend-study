@@ -361,14 +361,6 @@ DELETE /books/1
 204 No Content
 ```
 
-## 발표할 때 강조할 부분
-
-1. `BookController`는 HTTP 요청과 응답만 담당합니다.
-2. `BookService`는 CRUD 로직과 예외 처리를 담당합니다.
-3. `BookRepository`는 JPA를 통해 DB 접근을 담당합니다.
-4. `Book` Entity는 DB에 저장될 데이터 구조를 정의합니다.
-5. 존재하지 않는 id는 Service의 `findBook()`에서 공통으로 처리해 `404 Not Found`를 반환합니다.
-
 ## 정리
 
 이 프로젝트의 핵심은 단순히 CRUD API를 만든 것이 아니라, Spring Boot에서 많이 사용하는 계층형 구조로 책임을 나누어 구현했다는 점입니다.
