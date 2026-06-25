@@ -1,53 +1,142 @@
-# Books CRUD API
+#  Books CRUD API
 
-## 프로젝트 핵심
+Spring Boot와 Spring Data JPA를 활용하여 도서 정보를 생성(Create), 조회(Read), 수정(Update), 삭제(Delete)할 수 있는 REST API 프로젝트입니다.
 
-이 프로젝트는 책 정보를 관리하는 REST API입니다.
+## 1. 프로젝트 소개
 
-핵심 기능은 다음 5가지입니다.
+이 프로젝트는 도서 정보를 관리하는 기본 CRUD API를 구현한 예제입니다.
 
-- 책 등록
-- 전체 책 조회
-- 책 단건 조회
-- 책 정보 수정
-- 책 삭제
+사용자는 책 정보를 등록하고, 등록된 책 목록을 조회하고, 특정 책을 조회하거나 수정 및 삭제할 수 있습니다.
 
-이번 구현에서 가장 중요한 부분은 **Controller, Service, Repository, Entity를 계층별로 분리해서 CRUD 흐름을 만든 것**입니다.
 
-## 코드 흐름 한눈에 보기
+
+## 2. 프로젝트 구조 
 
 ```text
-Client
-  ↓ HTTP 요청
-BookController
-  ↓ 비즈니스 로직 호출
-BookService
-  ↓ DB 작업 요청
-BookRepository
-  ↓ JPA가 Entity를 DB와 매핑
-Book Entity
-```
-
-요청은 Controller에서 받고, 실제 처리 로직은 Service에서 수행합니다. Repository는 데이터베이스 접근만 담당하고, Entity는 DB에 저장될 책 데이터의 구조를 정의합니다.
-
-## 디렉토리 구조
-
-```text
-src/main/java/com/example/booksapi
-├── BooksApiApplication.java
+src
 ├── controller
-│   └── BookController.java
-├── entity
-│   └── Book.java
+│   └── BookController
+├── service
+│   └── BookService
 ├── repository
-│   └── BookRepository.java
-└── service
-    └── BookService.java
+│   └── BookRepository
+├── entity
+│   └── Book
+└── BooksApiApplication
 ```
 
-## 1. Book Entity
+### 계층 구조
 
-`Book`은 데이터베이스에 저장되는 책 한 권의 정보를 표현합니다.
+| 계층 | 역할 |
+| --- | --- |
+| Controller | HTTP 요청 처리 |
+| Service | 비즈니스 로직 수행 |
+| Repository | 데이터베이스 접근 |
+| Entity | 데이터베이스 테이블과 매핑 |
+
+프로젝트는 Controller, Service, Repository, Entity로 계층을 분리했습니다.
+
+Controller는 HTTP 요청을 받고, Service는 실제 로직을 처리합니다. Repository는 데이터베이스에 접근하고, Entity는 데이터베이스 테이블과 매핑됩니다.
+
+## 3. API 설명 
+
+| Method | URL | 설명 |
+| --- | --- | --- |
+| POST | `/books` | 책 등록 |
+| GET | `/books` | 전체 조회 |
+| GET | `/books/{id}` | 단건 조회 |
+| PUT | `/books/{id}` | 수정 |
+| DELETE | `/books/{id}` | 삭제 |
+
+CRUD 기능을 모두 REST API 형태로 구현했습니다.
+
+## 4. 실행 흐름 
+
+```text
+Postman
+↓
+BookController
+↓
+BookService
+↓
+BookRepository
+↓
+H2 Database
+↓
+Response(JSON)
+```
+
+Postman에서 요청을 보내면 `BookController`가 요청을 받습니다.
+
+이후 `BookService`에서 비즈니스 로직을 처리하고, `BookRepository`를 통해 H2 Database에 접근합니다.
+
+마지막으로 처리 결과를 JSON 형태로 응답합니다.
+
+## 5. 코드 설명 
+
+### BookController
+
+- `@RestController`를 이용하여 REST API 구현
+- `@RequestMapping("/books")`으로 공통 URL 지정
+- CRUD 요청 처리
+
+```java
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("/books")
+public class BookController {
+
+    private final BookService bookService;
+}
+```
+
+`BookController`는 클라이언트 요청을 받는 계층입니다.
+
+예를 들어 `POST /books` 요청이 들어오면 책 등록 메서드가 실행되고, 실제 저장 로직은 Service로 넘겨 처리합니다.
+
+### BookService
+
+- 실제 CRUD 로직 수행
+- 존재하지 않는 id에 대한 예외 처리
+- Controller와 Repository 사이에서 중간 역할 수행
+
+```java
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class BookService {
+
+    private final BookRepository bookRepository;
+}
+```
+
+`BookService`는 실제 비즈니스 로직을 담당합니다.
+
+책 등록, 조회, 수정, 삭제 기능을 처리하고, 존재하지 않는 책을 요청했을 때 `404 Not Found`가 반환되도록 예외 처리도 담당합니다.
+
+### BookRepository
+
+`JpaRepository`를 상속하여 CRUD 기능을 자동으로 제공합니다.
+
+```java
+public interface BookRepository extends JpaRepository<Book, Long> {
+}
+```
+
+자동으로 제공되는 주요 메서드는 다음과 같습니다.
+
+- `save()`
+- `findAll()`
+- `findById()`
+- `delete()`
+
+`BookRepository`는 데이터베이스 접근을 담당합니다.
+
+`JpaRepository`를 상속했기 때문에 SQL을 직접 작성하지 않아도 기본 CRUD 기능을 사용할 수 있습니다.
+
+### Book Entity
+
+Book 정보를 저장하는 엔티티입니다.
 
 ```java
 @Entity
@@ -68,111 +157,18 @@ public class Book {
 }
 ```
 
-### 코드 설명
+Book Entity의 필드는 다음과 같습니다.
 
-| 코드 | 설명 |
-| --- | --- |
-| `@Entity` | 이 클래스가 JPA 엔티티임을 의미합니다. |
-| `@Id` | 기본 키 필드를 지정합니다. |
-| `@GeneratedValue(strategy = GenerationType.IDENTITY)` | id 값을 DB가 자동 증가 방식으로 생성합니다. |
-| `name` | 책 이름을 저장합니다. |
-| `price` | 책 가격을 저장합니다. |
-| `author` | 저자 이름을 저장합니다. |
-| Lombok 어노테이션 | getter, setter, 생성자, builder 코드를 자동 생성합니다. |
+- `id`
+- `name`
+- `price`
+- `author`
 
-즉, `Book` 클래스 하나가 DB의 `book` 테이블 구조가 됩니다.
+`Book` 엔티티는 데이터베이스 테이블과 매핑되는 클래스입니다.
 
-## 2. BookRepository
+`id`는 기본 키이고 자동 증가됩니다. `name`, `price`, `author`는 책 정보를 저장하는 필드입니다.
 
-`BookRepository`는 데이터베이스에 접근하는 계층입니다.
-
-```java
-public interface BookRepository extends JpaRepository<Book, Long> {
-}
-```
-
-### 코드 설명
-
-`JpaRepository<Book, Long>`을 상속했기 때문에 기본 CRUD 메서드를 직접 만들 필요가 없습니다.
-
-| 메서드 | 역할 |
-| --- | --- |
-| `save(book)` | 책 등록 또는 수정 |
-| `findAll()` | 전체 책 조회 |
-| `findById(id)` | id로 책 단건 조회 |
-| `delete(book)` | 책 삭제 |
-
-Repository에는 별도 코드를 작성하지 않았지만, Spring Data JPA가 런타임에 구현체를 자동으로 만들어줍니다.
-
-## 3. BookService
-
-`BookService`는 CRUD의 실제 처리 흐름을 담당합니다.
-
-### 책 등록
-
-```java
-@Transactional
-public Book createBook(Book book) {
-    return bookRepository.save(book);
-}
-```
-
-Controller에서 받은 `Book` 객체를 Repository의 `save()` 메서드로 저장합니다.
-
-### 전체 조회
-
-```java
-public List<Book> getAllBooks() {
-    return bookRepository.findAll();
-}
-```
-
-DB에 저장된 모든 책을 리스트로 반환합니다.
-
-### 단건 조회
-
-```java
-public Book getBookById(Long id) {
-    return findBook(id);
-}
-```
-
-단건 조회는 바로 Repository를 호출하지 않고 `findBook(id)` 공통 메서드를 사용합니다.
-
-### 수정
-
-```java
-@Transactional
-public Book updateBook(Long id, Book request) {
-    Book book = findBook(id);
-    book.setName(request.getName());
-    book.setPrice(request.getPrice());
-    book.setAuthor(request.getAuthor());
-    return book;
-}
-```
-
-수정 로직의 흐름은 다음과 같습니다.
-
-1. id로 기존 책을 찾습니다.
-2. 존재하면 name, price, author 값을 변경합니다.
-3. `@Transactional` 안에서 엔티티 값이 변경되므로 JPA가 변경 내용을 DB에 반영합니다.
-
-여기서 `bookRepository.save(book)`을 다시 호출하지 않아도 되는 이유는, 조회한 `book` 객체가 영속 상태이기 때문입니다.
-
-### 삭제
-
-```java
-@Transactional
-public void deleteBook(Long id) {
-    Book book = findBook(id);
-    bookRepository.delete(book);
-}
-```
-
-삭제도 먼저 id로 책을 찾고, 존재하는 경우에만 삭제합니다.
-
-### 404 예외 처리
+### 예외 처리
 
 ```java
 private Book findBook(Long id) {
@@ -184,185 +180,26 @@ private Book findBook(Long id) {
 }
 ```
 
-`findBook(id)`는 조회, 수정, 삭제에서 공통으로 사용됩니다.
+존재하지 않는 id로 조회, 수정, 삭제를 요청하면 `404 Not Found`를 반환하도록 구현했습니다.
 
-책이 존재하지 않으면 `ResponseStatusException`을 발생시키고, HTTP 상태 코드는 `404 Not Found`로 반환됩니다.
+이 로직은 `findBook()` 메서드로 분리해서 중복을 줄였습니다.
 
-이렇게 공통 메서드로 분리하면 조회, 수정, 삭제마다 예외 처리 코드를 반복하지 않아도 됩니다.
+## 6. Postman 결과
 
-## 4. BookController
+Postman을 이용해 각 API가 정상적으로 동작하는지 확인할 수 있습니다.
 
-`BookController`는 HTTP 요청을 받는 계층입니다.
+![Postman 실행 결과](postman.png)
 
-```java
-@RestController
-@RequiredArgsConstructor
-@RequestMapping("/books")
-public class BookController {
+- POST `/books`
+- GET `/books`
+- GET `/books/{id}`
+- PUT `/books/{id}`
+- DELETE `/books/{id}`
 
-    private final BookService bookService;
-}
-```
+## 7. 배운 점 
 
-### 코드 설명
-
-| 코드 | 설명 |
-| --- | --- |
-| `@RestController` | JSON 응답을 반환하는 REST Controller입니다. |
-| `@RequestMapping("/books")` | 모든 API의 기본 경로를 `/books`로 지정합니다. |
-| `@RequiredArgsConstructor` | `final` 필드인 `BookService`를 생성자 주입합니다. |
-
-## API별 Controller 코드 설명
-
-### 1. 책 등록
-
-```java
-@PostMapping
-public ResponseEntity<Book> createBook(@RequestBody Book request) {
-    Book response = bookService.createBook(request);
-    return ResponseEntity.status(HttpStatus.CREATED).body(response);
-}
-```
-
-- `POST /books` 요청을 처리합니다.
-- `@RequestBody`로 JSON 요청 값을 `Book` 객체로 받습니다.
-- 저장 후 생성된 `id`를 포함한 책 정보를 응답합니다.
-- 등록 성공이므로 상태 코드는 `201 Created`를 반환합니다.
-
-### 2. 전체 조회
-
-```java
-@GetMapping
-public ResponseEntity<List<Book>> getAllBooks() {
-    return ResponseEntity.ok(bookService.getAllBooks());
-}
-```
-
-- `GET /books` 요청을 처리합니다.
-- Service에서 전체 책 목록을 받아 배열 형태로 반환합니다.
-- 성공 상태 코드는 `200 OK`입니다.
-
-### 3. 단건 조회
-
-```java
-@GetMapping("/{id}")
-public ResponseEntity<Book> getBook(@PathVariable Long id) {
-    return ResponseEntity.ok(bookService.getBookById(id));
-}
-```
-
-- `GET /books/{id}` 요청을 처리합니다.
-- `@PathVariable`로 URL의 id 값을 받습니다.
-- 해당 id의 책이 있으면 `200 OK`, 없으면 Service에서 `404 Not Found`를 반환합니다.
-
-### 4. 책 수정
-
-```java
-@PutMapping("/{id}")
-public ResponseEntity<Book> updateBook(@PathVariable Long id, @RequestBody Book request) {
-    return ResponseEntity.ok(bookService.updateBook(id, request));
-}
-```
-
-- `PUT /books/{id}` 요청을 처리합니다.
-- URL의 id로 수정할 책을 찾습니다.
-- Request Body의 값으로 기존 책 정보를 변경합니다.
-- 수정된 책 정보를 응답합니다.
-
-### 5. 책 삭제
-
-```java
-@DeleteMapping("/{id}")
-public ResponseEntity<Void> deleteBook(@PathVariable Long id) {
-    bookService.deleteBook(id);
-    return ResponseEntity.noContent().build();
-}
-```
-
-- `DELETE /books/{id}` 요청을 처리합니다.
-- 삭제 성공 시 응답 본문 없이 `204 No Content`를 반환합니다.
-- 삭제할 id가 없으면 Service에서 `404 Not Found`를 반환합니다.
-
-## API 요청 예시
-
-### 책 등록
-
-```http
-POST /books
-Content-Type: application/json
-```
-
-```json
-{
-  "name": "Spring Boot",
-  "price": 30000,
-  "author": "Kim"
-}
-```
-
-응답:
-
-```json
-{
-  "id": 1,
-  "name": "Spring Boot",
-  "price": 30000,
-  "author": "Kim"
-}
-```
-
-### 전체 조회
-
-```http
-GET /books
-```
-
-```json
-[
-  {
-    "id": 1,
-    "name": "Spring Boot",
-    "price": 30000,
-    "author": "Kim"
-  }
-]
-```
-
-### 단건 조회
-
-```http
-GET /books/1
-```
-
-### 수정
-
-```http
-PUT /books/1
-Content-Type: application/json
-```
-
-```json
-{
-  "name": "Spring Boot Advanced",
-  "price": 35000,
-  "author": "Kim"
-}
-```
-
-### 삭제
-
-```http
-DELETE /books/1
-```
-
-응답 상태:
-
-```text
-204 No Content
-```
-
-## 정리
-
-이 프로젝트의 핵심은 단순히 CRUD API를 만든 것이 아니라, Spring Boot에서 많이 사용하는 계층형 구조로 책임을 나누어 구현했다는 점입니다.
-
-Controller는 요청을 받고, Service는 로직을 처리하고, Repository는 DB와 연결하고, Entity는 데이터를 표현합니다. 이 구조 덕분에 코드 역할이 명확해지고 유지보수가 쉬워집니다.
+- REST API의 CRUD 구현 방법을 학습했습니다.
+- Controller-Service-Repository 계층 구조를 이해했습니다.
+- Spring Data JPA를 이용하여 SQL 없이 CRUD를 구현했습니다.
+- Postman을 이용한 API 테스트 방법을 익혔습니다.
+- 존재하지 않는 데이터에 대해 `404 Not Found`를 반환하는 예외 처리 방법을 익혔습니다.
