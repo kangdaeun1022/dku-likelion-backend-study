@@ -1,0 +1,54 @@
+name: 2-week03 Fly Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '2-week03/**'
+      - '.github/workflows/2-week03-fly-deploy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fly-2-week03
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Test, deploy and verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - name: Build and test
+        working-directory: 2-week03
+        run: ./gradlew clean build --no-daemon
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+        with:
+          version: '0.4.106'
+      - name: Deploy to Fly.io
+        working-directory: 2-week03
+        run: flyctl deploy --remote-only --ha=false
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      - name: Verify public HTTPS response
+        shell: bash
+        run: |
+          URL='https://likelion-cicd-kangdaeun1022.fly.dev/'
+          for attempt in $(seq 1 12); do
+            if BODY=$(curl --fail --silent --show-error --max-time 30 "$URL") && [ "$BODY" = 'Fly.io deployment successful!' ]; then
+              printf 'Verified %s: %s\n' "$URL" "$BODY"
+              printf '### 배포 확인 완료\n- URL: %s\n- 커밋: %s\n- 응답: %s\n' "$URL" "$GITHUB_SHA" "$BODY" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo 'Public endpoint verification failed' >&2
+          exit 1
