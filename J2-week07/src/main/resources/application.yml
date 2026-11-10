@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: chapter07-deploy
+  profiles:
+    default: dev
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate:
+        default_batch_fetch_size: 100
+management:
+  health:
+    redis:
+      enabled: false
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never

@@ -1,0 +1,11 @@
+### 가입 성공 (같은 요청 반복 시 409)
+POST http://localhost:8080/api/v1/members
+Content-Type: application/json
+
+{"username":"new_user","password":"StrongPass12!","nickname":"아기사자"}
+
+### 입력 누락 400
+POST http://localhost:8080/api/v1/members
+Content-Type: application/json
+
+{"username":"missing_user"}
