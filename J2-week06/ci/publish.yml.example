@@ -1,0 +1,44 @@
+name: Chapter 7 publish and deploy (example)
+on:
+  push:
+    branches: [main]
+    paths: ['J2-week06/**', '.github/workflows/week06.yml']
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+concurrency:
+  group: week06-production
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: ./gradlew test
+        working-directory: J2-week06
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: J2-week06
+          push: true
+          tags: ghcr.io/kangdaeun1022/likelion-surl:${{ github.sha }}
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ap-northeast-2
+      - name: Request SSM deployment and wait
+        env:
+          INSTANCE_ID: ${{ secrets.EC2_INSTANCE_ID }}
+          IMAGE: ghcr.io/kangdaeun1022/likelion-surl:${{ github.sha }}
+        run: |
+          ID=$(aws ssm send-command --instance-ids "$INSTANCE_ID" --document-name AWS-RunShellScript --parameters "commands=[\"cd /opt/likelion && ./deploy.sh $IMAGE\"]" --query Command.CommandId --output text)
+          aws ssm wait command-executed --command-id "$ID" --instance-id "$INSTANCE_ID"
